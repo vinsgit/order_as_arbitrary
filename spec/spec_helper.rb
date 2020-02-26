@@ -1,5 +1,7 @@
-require "bundler/setup"
+require "active_record"
 require "order_as_arbitrary"
+
+ActiveRecord::Base.configurations = YAML.load_file("spec/config/database.yml")
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

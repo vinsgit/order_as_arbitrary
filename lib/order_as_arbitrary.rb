@@ -5,19 +5,23 @@ module OrderAsArbitrary
     method_name = get_method_name(name)
     if method_name
       check_arguments(args)
-      if args.first.is_a? Range
-        values = range_clause(args.first)
-      elsif args.first.is_a? Array
-        values = array_clause(args.first)
-      else
-        raise OrderAsArbitrary::Error, "Only accept array or range"
-      end
       self.class.send(:define_method, "#{method_name[0]}") do |values|
         column_name = get_method_name(__method__)[1]
-        sanitized_values_string = values.map {|value| connection.quote(value)}.join(",")
-        where("#{column_name} in (?)", values).order("FIELD(#{column_name}, #{sanitized_values_string})")
+        if values.is_a? Array
+          if values.empty?
+            return all
+          elsif values.first.is_a? Range
+            conditions = range_clause(column_name, values)
+          else
+            conditions = array_clause(column_name, values)
+          end
+          order_sql = "CASE #{conditions.join(' ')} ELSE #{conditions.size} END"
+          order(Arel.sql(order_sql))
+        else
+          raise OrderAsArbitrary::Error, "Only accept array"
+        end
       end
-      send(method_name[0], values)
+      send(method_name[0], args.first)
     else
       super
     end
@@ -26,24 +30,28 @@ module OrderAsArbitrary
   private
 
   def check_arguments(args)
-    raise OrderAsArbitrary::Error, "Wrong number of arguments "  if args.empty? || args.first.nil?
+    raise OrderAsArbitrary::Error, "Wrong number of arguments "  if args.empty?
   end
 
   def get_method_name(name)
     name.to_s.match(/^order_as_(\w*)/)
   end
 
-  def range_clause(range)
-    raise OrderAsArbitrary::Error, "Range needs to be increasing" if range.first >= range.last
-    range.to_a
+  def range_clause(column_name, values)
+    values = values.each_with_index.map do |range, index|
+      raise OrderAsArbitrary::Error, "Range needs to be increasing" if range.first >= range.last
+      op = range.exclude_end? ? "<" : "<="
+      "WHEN #{column_name} >= #{range.first} AND #{column_name} #{op} #{range.last} THEN #{index}"
+    end
+    values
   end
 
-  def array_clause(array)
-    array.map do |value|
-      raise OrderAsSpecified::Error, "Cannot order by `nil`" if value.nil?
-      value
+  def array_clause(column_name, values)
+    values = values.each_with_index.map do |value, index|
+      raise OrderAsArbitrary::Error, "Cannot order by `nil`" if value.nil?
+      "WHEN #{column_name} = '#{value}' THEN #{index}"
     end
-    array
+    values
   end
 
 end
