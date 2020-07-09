@@ -1,8 +1,21 @@
 # OrderAsArbitrary
+OrderAsArbitrary adds the ability for ActiveRecord to query for the results in the specified order
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/order_as_arbitrary`. To experiment with that code, run `bin/console` for an interactive prompt.
+It's as easy as:
 
-TODO: Delete this and the text above, and describe your gem
+```ruby
+class TestObject
+  extend OrderAsArbitrary
+end
+
+TestObject.order_as_name(["Irelia", "Yummi", "Akali", "Soraka"])
+=> #<ActiveRecord::Relation [
+     #<TestObject id: 4, name: "Irelia">,
+     #<TestObject id: 2, name: "Yummi">,
+     #<TestObject id: 1, name: "Akali">,
+     #<TestObject id: 3, name: "Soraka">
+   ]>
+``` 
 
 ## Installation
 
@@ -22,8 +35,34 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+Basic usage:
+```ruby
+class TestObject
+  extend OrderAsSpecified
+end
 
+TestObject.order_as_name(["Irelia", "Yummi", "Akali", "Soraka"])
+=> #<ActiveRecord::Relation [
+     #<TestObject id: 4, name: "Irelia">,
+     #<TestObject id: 2, name: "Yummi">,
+     #<TestObject id: 1, name: "Akali">,
+     #<TestObject id: 3, name: "Soraka">
+   ]>
+``` 
+
+This returns all TestObjects in the given name order.
+Because its an `ActiveRecord` relation, it can be chained like this:
+
+```ruby
+TestObject.
+  where(name: ["Yummi", "Akali", "Soraka"]).
+  order_as_name(["Yummi", "Akali", "Soraka"]).limit(3)
+=> #<ActiveRecord::Relation [
+     #<TestObject id: 2, name: "Yummi">,
+     #<TestObject id: 1, name: "Akali">,
+     #<TestObject id: 3, name: "Soraka">
+   ]>
+```
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
@@ -32,8 +71,4 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/order_as_arbitrary. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
-
-## Code of Conduct
-
-Everyone interacting in the OrderAsArbitrary project’s codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/[USERNAME]/order_as_arbitrary/blob/master/CODE_OF_CONDUCT.md).
+Bug reports and pull requests are welcome on GitHub at https://github.com/vinsgit/order_as_arbitrary. 
